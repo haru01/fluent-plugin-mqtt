@@ -56,24 +56,30 @@ module Fluent
       opts[:ca_file] = @ca if @ca
       opts[:cert_file] = @cert if @cert
       opts[:key_file] = @key if @key
-      @connect = MQTT::Client.connect(opts)
-      @connect.subscribe(@topic)
-
-      @thread = Thread.new do
-        @connect.get do |topic,message|
-          topic.gsub!("/","\.")
-          $log.debug "#{topic}: #{message}"
-          begin
-            parsed_message = self.parse(message)
-          rescue Exception => e
-            $log.error e
+      
+      begin
+        $log.debug "opts: #{opts}"
+        @connect = MQTT::Client.connect(opts)
+        $log.debug "subscribe topic:#{@topic}"
+        @connect.subscribe(@topic)
+        $log.debug "subscribed!!"
+        @thread = Thread.new do
+          @connect.get do |topic,message|
+            topic.gsub!("/","\.")
+            $log.debug "#{topic}: #{message}"
+            begin
+              parsed_message = self.parse(message)
+            rescue Exception => e
+              $log.error e
+            end
+            emit topic, parsed_message[0], parsed_message[1]
           end
-          emit topic, parsed_message[0], parsed_message[1]
         end
+      rescue Exception => e
+        $log.error e
       end
     end
 
-    
     def emit topic, message, time = Fluent::Engine.now
       if message.class == Array
         message.each do |data|
