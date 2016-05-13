@@ -60,7 +60,9 @@ module Fluent
       @connect = nil
       $log.debug "opts: #{opts}"
       begin
+        $log.info '-before MQTT::Client.connect(opts)'
         @connect = MQTT::Client.connect(opts)
+        $log.info '-after MQTT::Client.connect(opts)'
       rescue Exception => e
         $log.info '----'
         $log.error e
